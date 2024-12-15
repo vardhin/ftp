@@ -25,6 +25,7 @@ const rl = readline.createInterface({
 
 // Server implementation
 function startServer(port) {
+    const localIP = getLocalIP(); // Store local IP address
     const server = net.createServer((socket) => {
         console.log('Client connected:', socket.remoteAddress);
 
@@ -62,8 +63,8 @@ function startServer(port) {
         });
     });
 
-    server.listen(port, () => {
-        console.log(`Server listening on ${getLocalIP()}:${port}`);
+    server.listen(port, localIP, () => {
+        console.log(`Server listening on ${localIP}:${port}`);
     });
 
     server.on('error', (err) => {
