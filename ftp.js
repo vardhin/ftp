@@ -23,6 +23,57 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
+// Client implementation
+function startClient(serverIP, serverPort) {
+    const client = new net.Socket();
+    let fileStream;
+    let fileSize = 0;
+    let receivedSize = 0;
+
+    client.connect(serverPort, serverIP, () => {
+        console.log('Connected to server');
+        showClientMenu(client);
+    });
+
+    client.on('data', (data) => {
+        const response = data.toString();
+        if (response.startsWith('FILES:')) {
+            // Display list of files
+            const files = response.slice(6).split(',');
+            console.log('\nAvailable files:');
+            files.forEach((file, index) => {
+                console.log(`${index + 1}. ${file}`);
+            });
+            showClientMenu(client);
+        } else if (response.startsWith('START:')) {
+            // Handle file download
+            const filename = response.slice(6);
+            fileStream = fs.createWriteStream('downloaded_' + filename);
+            console.log(`\nDownloading ${filename}...`);
+        } else if (response.startsWith('SIZE:')) {
+            // Get the file size
+            fileSize = parseInt(response.slice(5));
+            console.log(`\nFile size: ${fileSize} bytes`);
+        } else if (response.startsWith('ERROR:')) {
+            console.log('\nError:', response.slice(6));
+            showClientMenu(client);
+        } else if (fileStream) {
+            // Write data to the file stream
+            fileStream.write(data);
+            receivedSize += data.length;
+            if (receivedSize >= fileSize) {
+                fileStream.end();
+                console.log('\nDownload complete.');
+                showClientMenu(client);
+            }
+        }
+    });
+
+    client.on('error', (err) => {
+        console.log('Client error:', err.message);
+    });
+}
+
 // Server implementation
 function startServer(port) {
     const localIP = getLocalIP(); // Store local IP address
@@ -46,6 +97,8 @@ function startServer(port) {
                 const filename = command.slice(4);
                 if (fs.existsSync(filename)) {
                     const fileStream = fs.createReadStream(filename);
+                    const stats = fs.statSync(filename);
+                    socket.write('SIZE:' + stats.size);
                     socket.write('START:' + filename);
                     fileStream.pipe(socket);
                 } else {
@@ -69,52 +122,6 @@ function startServer(port) {
 
     server.on('error', (err) => {
         console.log('Server error:', err.message);
-    });
-}
-
-// Client implementation
-function startClient(serverIP, serverPort) {
-    const client = new net.Socket();
-    let fileStream;
-
-    client.connect(serverPort, serverIP, () => {
-        console.log('Connected to server');
-        showClientMenu(client);
-    });
-
-    client.on('data', (data) => {
-        const response = data.toString();
-        if (response.startsWith('FILES:')) {
-            // Display list of files
-            const files = response.slice(6).split(',');
-            console.log('\nAvailable files:');
-            files.forEach((file, index) => {
-                console.log(`${index + 1}. ${file}`);
-            });
-            showClientMenu(client);
-        } else if (response.startsWith('START:')) {
-            // Handle file download
-            const filename = response.slice(6);
-            fileStream = fs.createWriteStream('downloaded_' + filename);
-            console.log(`\nDownloading ${filename}...`);
-        } else if (response.startsWith('ERROR:')) {
-            console.log('\nError:', response.slice(6));
-            showClientMenu(client);
-        } else if (fileStream) {
-            // Write data to the file stream
-            fileStream.write(data);
-        }
-    });
-
-    client.on('end', () => {
-        if (fileStream) {
-            fileStream.end();
-            console.log('\nDownload complete.');
-        }
-    });
-
-    client.on('error', (err) => {
-        console.log('Client error:', err.message);
     });
 }
 
