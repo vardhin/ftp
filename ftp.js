@@ -75,6 +75,7 @@ function startServer(port) {
 // Client implementation
 function startClient(serverIP, serverPort) {
     const client = new net.Socket();
+    let fileStream;
 
     client.connect(serverPort, serverIP, () => {
         console.log('Connected to server');
@@ -94,12 +95,21 @@ function startClient(serverIP, serverPort) {
         } else if (response.startsWith('START:')) {
             // Handle file download
             const filename = response.slice(6);
-            const writeStream = fs.createWriteStream('downloaded_' + filename);
-            client.pipe(writeStream);
+            fileStream = fs.createWriteStream('downloaded_' + filename);
             console.log(`\nDownloading ${filename}...`);
         } else if (response.startsWith('ERROR:')) {
             console.log('\nError:', response.slice(6));
             showClientMenu(client);
+        } else if (fileStream) {
+            // Write data to the file stream
+            fileStream.write(data);
+        }
+    });
+
+    client.on('end', () => {
+        if (fileStream) {
+            fileStream.end();
+            console.log('\nDownload complete.');
         }
     });
 
