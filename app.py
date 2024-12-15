@@ -50,7 +50,8 @@ def client_mode():
     password = input("Enter password (or leave blank for anonymous): ").strip()
 
     try:
-        with FTP(server) as ftp:
+        with FTP() as ftp:
+            ftp.connect(server, 2121)  # Connect with the correct port
             ftp.login(user=username or "anonymous", passwd=password or "")
             print(f"[INFO] Connected to FTP server: {server}")
 
@@ -61,19 +62,19 @@ def client_mode():
                 print("3. UPLOAD <filepath> - Upload a file")
                 print("4. EXIT - Disconnect")
 
-                command = input("Enter command: ").strip()
-                if command.upper() == "EXIT":
+                command = input("Enter command: ").strip().upper()  # Ensure case-insensitivity and strip extra spaces
+                if command == "EXIT":
                     print("[INFO] Disconnecting from the server.")
                     break
-                elif command.upper() == "LIST":
+                elif command == "LIST":
                     list_files(ftp)
-                elif command.upper().startswith("DOWNLOAD"):
+                elif command.startswith("DOWNLOAD"):
                     parts = command.split(" ", 1)
                     if len(parts) < 2:
                         print("[ERROR] Please specify the filename to download.")
                     else:
                         download_file(ftp, parts[1])
-                elif command.upper().startswith("UPLOAD"):
+                elif command.startswith("UPLOAD"):
                     parts = command.split(" ", 1)
                     if len(parts) < 2:
                         print("[ERROR] Please specify the file path to upload.")
@@ -83,6 +84,7 @@ def client_mode():
                     print("[ERROR] Invalid command.")
     except Exception as e:
         print(f"[ERROR] Unable to connect to FTP server: {e}")
+
 
 # Server mode implementation
 def server_mode():
