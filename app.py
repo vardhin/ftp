@@ -44,26 +44,75 @@ def upload_file(ftp, filepath):
     except Exception as e:
         print(f"[ERROR] Failed to upload file '{filepath}': {e}")
 
+# Server mode implementation
+def server_mode():
+    ip_address = input("Enter IP address to bind the server: ").strip()
+    port = int(input("Enter port to bind the server: ").strip())
+    try:
+        authorizer = DummyAuthorizer()
+        authorizer.add_user("user", "12345", os.getcwd(), perm="elradfmw")
+        authorizer.add_anonymous(os.getcwd(), perm="elradfmw")
+
+        handler = FTPHandler
+        handler.authorizer = authorizer
+
+        server = FTPServer((ip_address, port), handler)
+        print("\n" + "="*50)
+        print("SERVER STARTED SUCCESSFULLY!")
+        print("="*50)
+        print("\nConnection Details for Clients:")
+        print(f"Server IP: {ip_address}")
+        print(f"Port: {port}")
+        print("\nAuthentication Option 1 (User Login):")
+        print("Username: user")
+        print("Password: 12345")
+        print("\nAuthentication Option 2 (Anonymous):")
+        print("Username: (leave blank)")
+        print("Password: (leave blank)")
+        print("\nTo connect from another computer:")
+        print(f"1. Run this program in Client Mode")
+        print(f"2. Enter server address: {ip_address}")
+        print(f"3. Enter server port: {port}")
+        print(f"4. Choose either user credentials or anonymous login")
+        print("\n" + "="*50)
+        print("Press Ctrl+C to stop the server.")
+        print("="*50 + "\n")
+
+        server.serve_forever()
+    except Exception as e:
+        print(f"[ERROR] Failed to start FTP server: {e}")
+
 def client_mode():
+    print("\n" + "="*50)
+    print("FTP CLIENT CONNECTION")
+    print("="*50)
+    print("\nTo connect to the server, you need:")
+    print("1. The server's IP address")
+    print("2. The server's port number")
+    print("3. Optional: username and password (or use anonymous login)")
+    print("="*50 + "\n")
+
     server = input("Enter FTP server address: ").strip()
     port = int(input("Enter FTP server port: ").strip())
+    print("\nFor anonymous login, leave the following blank:")
     username = input("Enter username (or leave blank for anonymous): ").strip()
     password = input("Enter password (or leave blank for anonymous): ").strip()
 
+    # Rest of the client_mode function remains the same
     try:
         with FTP() as ftp:
             ftp.connect(server, port)
             ftp.login(user=username or "anonymous", passwd=password or "")
-            print(f"[INFO] Connected to FTP server: {server}:{port}")
-
+            print(f"[SUCCESS] Connected to FTP server: {server}:{port}")
+            
             while True:
-                print("\nCommands:")
+                print("\nAvailable Commands:")
                 print("1. LIST - List files on the server")
                 print("2. DOWNLOAD <filename> - Download a file")
                 print("3. UPLOAD <filepath> - Upload a file")
                 print("4. EXIT - Disconnect")
 
-                command = input("Enter command: ").strip().upper()  # Ensure case-insensitivity and strip extra spaces
+                command = input("Enter command: ").strip().upper()
                 if command == "EXIT":
                     print("[INFO] Disconnecting from the server.")
                     break
@@ -85,27 +134,6 @@ def client_mode():
                     print("[ERROR] Invalid command.")
     except Exception as e:
         print(f"[ERROR] Unable to connect to FTP server: {e}")
-
-# Server mode implementation
-def server_mode():
-    ip_address = input("Enter IP address to bind the server: ").strip()
-    port = int(input("Enter port to bind the server: ").strip())
-    try:
-        authorizer = DummyAuthorizer()
-        authorizer.add_user("user", "12345", os.getcwd(), perm="elradfmw")  # Change username and password as needed
-        authorizer.add_anonymous(os.getcwd(), perm="elradfmw")
-
-        handler = FTPHandler
-        handler.authorizer = authorizer
-
-        server = FTPServer((ip_address, port), handler)
-        print(f"[INFO] FTP Server started on {ip_address}:{port}")
-        print("[INFO] User: user, Password: 12345")
-        print("[INFO] Press Ctrl+C to stop the server.")
-
-        server.serve_forever()
-    except Exception as e:
-        print(f"[ERROR] Failed to start FTP server: {e}")
 
 def main_menu():
     while True:
