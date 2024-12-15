@@ -46,14 +46,15 @@ def upload_file(ftp, filepath):
 
 def client_mode():
     server = input("Enter FTP server address: ").strip()
+    port = int(input("Enter FTP server port: ").strip())
     username = input("Enter username (or leave blank for anonymous): ").strip()
     password = input("Enter password (or leave blank for anonymous): ").strip()
 
     try:
         with FTP() as ftp:
-            ftp.connect(server, 2121)  # Connect with the correct port
+            ftp.connect(server, port)
             ftp.login(user=username or "anonymous", passwd=password or "")
-            print(f"[INFO] Connected to FTP server: {server}")
+            print(f"[INFO] Connected to FTP server: {server}:{port}")
 
             while True:
                 print("\nCommands:")
@@ -85,9 +86,10 @@ def client_mode():
     except Exception as e:
         print(f"[ERROR] Unable to connect to FTP server: {e}")
 
-
 # Server mode implementation
 def server_mode():
+    ip_address = input("Enter IP address to bind the server: ").strip()
+    port = int(input("Enter port to bind the server: ").strip())
     try:
         authorizer = DummyAuthorizer()
         authorizer.add_user("user", "12345", os.getcwd(), perm="elradfmw")  # Change username and password as needed
@@ -96,8 +98,8 @@ def server_mode():
         handler = FTPHandler
         handler.authorizer = authorizer
 
-        server = FTPServer(("0.0.0.0", 2121), handler)
-        print("[INFO] FTP Server started on port 2121")
+        server = FTPServer((ip_address, port), handler)
+        print(f"[INFO] FTP Server started on {ip_address}:{port}")
         print("[INFO] User: user, Password: 12345")
         print("[INFO] Press Ctrl+C to stop the server.")
 
